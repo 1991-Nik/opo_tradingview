@@ -369,6 +369,40 @@ export class BrokerSample {
                     });
                 }
                 this._updateOrderLast(order);
+                // *** START Code to call MT5 API 
+                const apiUrl = 'https://opomt5.azurewebsites.net/api/Trade/send_request';
+                const data = {
+                    "action": "200",
+                    "login": 1020,
+                    "symbol": order.symbol,
+                    "volume": order.qty,
+                    "typeFill": 0,
+                    "type": order.type,
+                    "priceOrder": order.price,
+                    "digits": 5
+                };
+                const requestOptions = {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data),
+                };
+                fetch(apiUrl, requestOptions)
+                    .then(response => {
+                    console.log(JSON.stringify(response));
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                    .then(data => {
+                    console.log(JSON.stringify(data, null, 2));
+                })
+                    .catch(error => {
+                    console.error('Error:', error);
+                });
+                // *** END
             });
         }
         this._host.orderUpdate(order);

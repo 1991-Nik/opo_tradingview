@@ -527,6 +527,10 @@ export class BrokerSample implements IBrokerWithoutRealtime {
 				}
 
 				this._updateOrderLast(order);
+				
+                // *** START Code to call  API 
+               
+
 			});
 		}
 
