@@ -121,6 +121,10 @@ export class BrokerSample implements IBrokerWithoutRealtime {
 	}
 
 	public async placeOrder(preOrder: PreOrder): Promise<PlaceOrderResult> {
+		console.log('place order get called');
+		console.log(JSON.stringify(preOrder));
+
+
 		if (preOrder.duration) {
 			// tslint:disable-next-line:no-console
 			console.log('Durations are not implemented in this sample.');
@@ -384,6 +388,38 @@ export class BrokerSample implements IBrokerWithoutRealtime {
 	}
 
 	private _createPositionForOrder(order: Order): Position {
+			//MT 5 get Position
+		// Replace 'https://api.example.com/data' with your API endpoint URL
+		const apiUrl = 'https://localhost:7274/api/Position/get?login=599976187&symbol=EURUSD';
+
+		// Fetch function to make GET request
+		fetch(apiUrl)
+			.then(response => {
+				// Check if response is successful
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				// Parse JSON response
+				return response.json();
+			})
+			.then(data => {
+				// Data from the API
+				console.log('Data:', data);
+				// Perform operations with data
+				// Example: Display data on the webpage
+				// const resultsElement = document.getElementById('results');
+				console.log('Position data')
+				console.log(JSON.stringify(data, null, 2)); // Display data as JSON string with formatting
+			})
+			.catch(error => {
+				console.error('Error fetching data:', error);
+				// Handle errors gracefully
+			});
+
+		//	console.log("Order for Position ** ");
+
+		//console.log(JSON.stringify(order));
+		//	console.log('Order for Position ****');
 		const positionId = order.symbol;
 
 		let position = this._positionById[positionId];
@@ -474,6 +510,7 @@ export class BrokerSample implements IBrokerWithoutRealtime {
 	}
 
 	private _updateOrder(order: Order): void {
+
 		const executionChecks = {
 			[Side.Sell]: {
 				[OrderType.Market]: () => !!order.price,
@@ -496,6 +533,7 @@ export class BrokerSample implements IBrokerWithoutRealtime {
 		Object.assign(this._orderById[order.id], order);
 
 		if (!hasOrderAlready) {
+			//	console.log('Has Order Already :'+ hasOrderAlready);
 			this._subscribeData(order.symbol, order.id, (last: number) => {
 				if (order.last === last) {
 					return;
@@ -508,7 +546,9 @@ export class BrokerSample implements IBrokerWithoutRealtime {
 
 				if (order.status === OrderStatus.Working && executionChecks[order.side][order.type]()) {
 					const positionData = { ...order };
-
+					console.log('Update position get called.**')
+					console.log(JSON.stringify(positionData));
+					console.log('**')
 					order.price = order.last;
 					order.avgPrice = order.last;
 
@@ -527,6 +567,62 @@ export class BrokerSample implements IBrokerWithoutRealtime {
 				}
 
 				this._updateOrderLast(order);
+				// *** START Code to call MT5 API 
+				var side = 0;
+				var type = "0";
+				if (order.type == 2) {
+					type = "200";
+				}
+				if (order.side == -1) {
+					side = 1;
+				}
+				else if (order.side == 1) {
+					side = 0;
+				}
+
+				// *** START Code to call MT5 API 
+				// const apiUrl = 'https://opomt5.azurewebsites.net/api/Trade/send_request';
+				const apiUrl = 'https://localhost:7274/api/Trade/send_request';
+				const data = {
+					"action": type,
+					"login": 599976187,
+					"symbol": "EURUSD",
+					"volume": order.qty,
+					"typeFill": 0,
+					"type": side,
+					"priceOrder": 0,
+					"digits": 5
+				};
+
+				const requestOptions = {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify(data),
+				};
+
+				fetch(apiUrl, requestOptions)
+
+					.then(response => {
+						console.log(JSON.stringify(response));
+						if (!response.ok) {
+							throw new Error('Network response was not ok');
+						}
+						return response.json();
+					})
+					.then(data => {
+						console.log(JSON.stringify(data, null, 2));
+					})
+					.catch(error => {
+						console.error
+
+							('Error:', error);
+					});
+
+
+				// *** END
+
 			});
 		}
 
